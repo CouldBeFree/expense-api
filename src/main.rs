@@ -5,6 +5,7 @@ mod db;
 mod models;
 mod repository;
 mod app_state;
+mod utils;
 
 use actix_web::{App, HttpServer, middleware::Logger, web::Data};
 use actix_cors::Cors;
@@ -12,8 +13,6 @@ use env_logger::Env;
 use repository::user_repo::UserRepo;
 use app_state::app_state::AppState;
 use db::db::DatabaseInstance;
-
-// use crate::models::user_model::User;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
