@@ -1,6 +1,9 @@
+extern crate bcrypt;
+
 use mongodb::bson::oid::ObjectId;
 use serde::{Serialize, Deserialize};
 use email_address::EmailAddress;
+use bcrypt::verify;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct User {
@@ -16,6 +19,10 @@ pub struct User {
 impl User {
     pub fn is_valid_email(&self) -> bool {
         EmailAddress::is_valid(&self.email)
+    }
+
+    pub fn verify_password(&self, password: String) -> bool {
+        verify(password.as_str(), &self.password).unwrap()
     }
 }
 

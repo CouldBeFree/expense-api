@@ -2,9 +2,10 @@ extern crate dotenv;
 
 use std::vec;
 
+use bcrypt::{DEFAULT_COST, hash};
 use mongodb::{
     bson::{extjson::de::Error, oid::ObjectId, doc, Bson},
-    results::{ InsertOneResult, UpdateResult, DeleteResult },
+    // results::{ InsertOneResult, UpdateResult, DeleteResult },
     Collection, Database
 };
 
@@ -36,12 +37,28 @@ impl UserRepo {
         }
     }
 
+    async fn get_user_by_email(&self, user_email: &String) -> Result<(), Error> {
+        let filter_options = doc! {"email": user_email};
+        let user = self
+            .collection
+            .find_one(filter_options, None)
+            .await
+            .ok()
+            .unwrap();
+        match user {
+            Some(_) => Err(Error::DeserializationError { message: "User with this email already exists".to_string() }),
+            None => Ok(())
+        }
+    }
+
     pub async fn create_user(&self, new_user: User) -> Result<UserResponse, Error> {
+        let hashed_password: String = hash(new_user.password.as_str(), DEFAULT_COST).unwrap();
+        self.get_user_by_email(&new_user.email).await?;
         let new_user = User {
             id: None,
             name: new_user.name.to_owned(),
             email: new_user.email.to_owned(),
-            password: new_user.password.to_owned(),
+            password: hashed_password,
             expenses: Some(vec![]),
             incomes: Some(vec![])
         };
