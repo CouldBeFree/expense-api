@@ -4,3 +4,8 @@ use serde::Serialize;
 pub struct Error {
     pub error: String
 }
+
+pub enum UpdateType {
+    Add,
+    Remove
+}

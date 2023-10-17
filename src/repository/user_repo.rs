@@ -1,15 +1,16 @@
 extern crate dotenv;
 
-use std::{vec, f64::consts::E};
+use std::vec;
 
 use bcrypt::{DEFAULT_COST, hash};
 use mongodb::{
     bson::{extjson::de::Error, oid::ObjectId, doc, Bson},
-    // results::{ InsertOneResult, UpdateResult, DeleteResult },
+    results::UpdateResult,
     Collection, Database
 };
 
 use crate::models::user_model::{User, UserResponse, UserLogin};
+use crate::utils::UpdateType;
 
 #[derive(Clone, Debug)]
 pub struct UserRepo {
@@ -20,6 +21,32 @@ impl UserRepo {
     pub async fn init(db: &Database) -> Self {
         let collection: Collection<User> = db.collection("user");
         UserRepo { collection }
+    }
+
+    pub async fn update_user_income(&self, user_id: ObjectId, post_id: &Bson, update_type: UpdateType) -> Result<UpdateResult, Error> {
+        let filter_options = doc!{"_id": user_id};
+        let doc = match update_type {
+            UpdateType::Add => {
+                doc! {
+                    "$push": {
+                        "incomes": &post_id
+                    }
+                }
+            },
+            UpdateType::Remove => {
+                doc! {
+                    "$pull": {
+                        "incomes": &post_id
+                    }
+                }
+            }
+        };
+        let user = self
+            .collection
+            .update_one(filter_options, doc, None)
+            .await
+            .unwrap();
+        Ok(user)
     }
 
     async fn find_user_by_id(&self, user_id: &Bson) -> Result<UserResponse, Error> {
