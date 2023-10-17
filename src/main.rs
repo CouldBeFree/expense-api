@@ -6,6 +6,7 @@ mod models;
 mod repository;
 mod app_state;
 mod utils;
+mod jwt;
 
 use actix_web::{App, HttpServer, middleware::Logger, web::Data};
 use actix_cors::Cors;

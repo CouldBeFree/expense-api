@@ -78,7 +78,7 @@ impl UserRepo {
         }
     }
 
-    pub async fn login_user(&self, user: UserLogin) -> Result<(), Error> {
+    pub async fn login_user(&self, user: UserLogin) -> Result<User, Error> {
         let user_result = self.get_user_by_email(&user.email).await;
         match user_result {
             Ok(data) => {
@@ -86,7 +86,7 @@ impl UserRepo {
                 if !is_password_valid {
                     return Err(Error::DeserializationError { message: "Email or password invalid".to_string() })
                 } else {
-                    return Ok(());
+                    return Ok(data);
                 }
             },
             Err(_) => return Err(Error::DeserializationError { message: "Email or password invalid".to_string() })

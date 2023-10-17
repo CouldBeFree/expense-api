@@ -1,6 +1,7 @@
 use crate::{models::user_model::UserLogin, app_state::app_state::AppState};
+use crate::jwt::JwtToken;
+
 use actix_web::{Responder, HttpResponse, web::Data, web::Json};
-use crate::utils::Error;
 
 pub async fn login(db: Data<AppState>, new_user: Json<UserLogin>) -> impl Responder {
     let data = UserLogin {
@@ -9,7 +10,12 @@ pub async fn login(db: Data<AppState>, new_user: Json<UserLogin>) -> impl Respon
     };
     let is_valid_user = db.user_repo.login_user(data).await;
     match is_valid_user {
-        Ok(()) => HttpResponse::Ok().json(Error{error: "Success".to_string()}),
-        Err(e) => HttpResponse::BadRequest().json(Error{error: e.to_string()})
+        Ok(user) => {
+            let id = user.id.unwrap().to_string();
+            let token = JwtToken::new(id);
+            let raw_token = token.encode();
+            HttpResponse::Ok().append_header(("token", raw_token)).take()
+        },
+        Err(_) => HttpResponse::Unauthorized().take()
     }
 }
