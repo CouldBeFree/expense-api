@@ -1,5 +1,5 @@
 use crate::{models::user_model::User, app_state::app_state::AppState};
-use actix_web::{Responder, HttpResponse, web::Data, web::{Json, Path}};
+use actix_web::{Responder, HttpResponse, web::Data, web::Json};
 use crate::utils::Error;
 
 pub async fn register(db: Data<AppState>, new_user: Json<User>) -> impl Responder {
