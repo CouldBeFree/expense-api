@@ -1,15 +1,16 @@
 extern crate dotenv;
 
+use futures::StreamExt;
 use mongodb::{
-    bson::{extjson::de::Error, oid::ObjectId, doc, Bson, Deserializer},
+    bson::{extjson::de::Error, oid::ObjectId, doc, Bson, Deserializer, Document},
     results::{ InsertOneResult, UpdateResult, DeleteResult },
-    options::{FindOneAndUpdateOptions, ReturnDocument},
+    options::{FindOneAndUpdateOptions, FindOptions, ReturnDocument},
     Collection, Database
 };
 
 // use crate::models::user_model::{User, UserResponse, UserLogin};
 use crate::models::income_model::Income;
-use crate::utils::UpdateType;
+use crate::utils::{UpdateType, Pagination, ArrayResponse, QueryParams};
 
 use super::user_repo::UserRepo;
 
@@ -79,5 +80,52 @@ impl IncomeRepo {
             Some(inc) => Ok(inc),
             None => Err(Error::DeserializationError { message: "Income not found".to_string() })
         }
+    }
+
+    pub async fn get_incomes(&self, user_id: &String, query_params: QueryParams) -> Result<ArrayResponse<Income>, Error> {
+        let user_obj_id = ObjectId::parse_str(user_id).unwrap();
+        let filter_options = doc!{"owner": user_obj_id};
+        let page = query_params.page;
+        let per_page = query_params.per_page;
+        let counted_skip = (page - 1) * per_page;
+        let pagination_options = FindOptions::builder().limit(per_page as i64).skip(counted_skip as u64).build();
+        let mut incomes = self
+            .collection
+            .find(filter_options.to_owned(), pagination_options)
+            .await
+            .unwrap();
+        let mut results: Vec<Income> = Vec::new();
+        while let Some(result) = incomes.next().await {
+            match result {
+                Ok(document) => {
+                    results.push(document)
+                },
+                _ => return Err(Error::DeserializationError { message: "Deserilaztion error".to_string() })
+            }
+        }
+        let filter_total = doc!{"owner": user_obj_id};
+        let total_incomes_count = self
+            .collection
+            .count_documents(filter_total, None)
+            .await
+            .ok()
+            .unwrap();
+        let t = (total_incomes_count as f64) / (per_page as f64);
+        let rounded_result = t.ceil() as u64;
+        let counted_previous = page - 1;
+        let prev: Option<usize> = if counted_previous == 0 { None } else {Some(counted_previous)};
+        let pagination = Pagination {
+            current: page,
+            count: total_incomes_count,
+            next: page + 1,
+            pages: rounded_result,
+            per_page: per_page,
+            previous: prev
+        };
+        let response = ArrayResponse {
+            data: results,
+            pagination
+        };
+        Ok(response)
     }
 }
