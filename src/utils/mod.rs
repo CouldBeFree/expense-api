@@ -1,8 +1,15 @@
 use serde::Serialize;
+use mongodb::bson::oid::ObjectId;
+use mongodb::bson::oid::Error as oid_error;
 
 #[derive(Debug, Serialize)]
 pub struct Error {
     pub error: String
+}
+
+#[derive(Debug, Serialize)]
+pub struct Success {
+    pub success: String
 }
 
 pub enum UpdateType {
@@ -47,4 +54,8 @@ impl QueryParams {
             page
          }
     }
+}
+
+pub trait ParseStringToObjId {
+    fn transform_to_obj_id(&self) -> Result<ObjectId, oid_error>;
 }

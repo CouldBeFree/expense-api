@@ -2,17 +2,22 @@ extern crate dotenv;
 
 use futures::StreamExt;
 use mongodb::{
-    bson::{extjson::de::Error, oid::ObjectId, doc, Bson, Deserializer, Document},
-    results::{ InsertOneResult, UpdateResult, DeleteResult },
+    bson::{extjson::de::Error, oid::ObjectId, doc, Bson},
+    results::{ InsertOneResult, DeleteResult },
     options::{FindOneAndUpdateOptions, FindOptions, ReturnDocument},
     Collection, Database
 };
 
-// use crate::models::user_model::{User, UserResponse, UserLogin};
 use crate::models::income_model::Income;
-use crate::utils::{UpdateType, Pagination, ArrayResponse, QueryParams};
+use crate::utils::{UpdateType, Pagination, ArrayResponse, QueryParams, ParseStringToObjId};
 
 use super::user_repo::UserRepo;
+
+impl ParseStringToObjId for String {
+    fn transform_to_obj_id(&self) -> Result<ObjectId, mongodb::bson::oid::Error> {
+        ObjectId::parse_str(self)
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct IncomeRepo {
@@ -60,7 +65,6 @@ impl IncomeRepo {
             .unwrap();
         match update_result {
             Some(income) => {
-                println!("Income name, {}", income.income_name);
                 Ok(income)
             }
             None => Err(Error::DeserializationError { message: "Income not found".to_string() })
@@ -127,5 +131,29 @@ impl IncomeRepo {
             pagination
         };
         Ok(response)
+    }
+
+    pub async fn remove_income(&self, user_id: &String, income_id: &String, user_repo: &UserRepo) -> Result<DeleteResult, Error> {
+        let obj_income_id = income_id.transform_to_obj_id().unwrap();
+        let user_obj_id = user_id.transform_to_obj_id().unwrap();
+        let filter_options = doc!{"_id": obj_income_id, "owner": user_obj_id};
+        let remove_result = self
+            .collection
+            .delete_one(filter_options, None)
+            .await;
+        match remove_result {
+            Ok(dr) => {
+                let bs = Bson::ObjectId(obj_income_id);
+                user_repo.update_user_income(user_obj_id, &bs, UpdateType::Remove).await?;
+                let count = dr.deleted_count;
+                if count == 0 {
+                    return Err(Error::DeserializationError { message: "Income not found".to_string() })
+                }
+                else {
+                    return Ok(dr)
+                }
+            },
+            Err(e) => Err(Error::DeserializationError { message: e.to_string() })
+        }
     }
 }
