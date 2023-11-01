@@ -1,5 +1,6 @@
 use crate::{models::user_model::UserLogin, app_state::app_state::AppState};
 use crate::jwt::JwtToken;
+use crate::utils::traits::user::UserRepository;
 
 use actix_web::{Responder, HttpResponse, web::Data, web::Json};
 

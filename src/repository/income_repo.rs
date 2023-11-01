@@ -10,6 +10,7 @@ use mongodb::{
 
 use crate::models::income_model::Income;
 use crate::utils::{UpdateType, Pagination, ArrayResponse, QueryParams, ParseStringToObjId};
+use crate::utils::traits::user::UserRepository;
 
 use super::user_repo::UserRepo;
 

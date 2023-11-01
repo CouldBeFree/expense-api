@@ -1,3 +1,5 @@
+pub mod traits;
+
 use serde::Serialize;
 use mongodb::bson::oid::ObjectId;
 use mongodb::bson::oid::Error as oid_error;

@@ -1,4 +1,5 @@
 extern crate dotenv;
+use crate::utils::traits::user::UserRepositoryTrait;
 
 mod views;
 mod db;
@@ -7,6 +8,7 @@ mod repository;
 mod app_state;
 mod utils;
 mod jwt;
+mod service;
 
 use actix_web::{App, HttpServer, middleware::Logger, web::Data};
 use actix_cors::Cors;

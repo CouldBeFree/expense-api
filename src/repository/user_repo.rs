@@ -1,5 +1,6 @@
 extern crate dotenv;
 
+use async_trait::async_trait;
 use std::vec;
 
 use bcrypt::{DEFAULT_COST, hash};
@@ -11,19 +12,28 @@ use mongodb::{
 
 use crate::models::user_model::{User, UserResponse, UserLogin};
 use crate::utils::UpdateType;
+use crate::utils::traits::user::UserRepositoryTrait;
 
 #[derive(Clone, Debug)]
 pub struct UserRepo {
     pub collection: Collection<User>
 }
 
-impl UserRepo {
-    pub async fn init(db: &Database) -> Self {
+// impl UserRepository for UserRepo {
+//     pub async fn init(db: &Database) -> Self {
+//         let collection: Collection<User> = db.collection("user");
+//         UserRepo { collection }
+//     }
+// }
+
+#[async_trait]
+impl UserRepositoryTrait for UserRepo {
+    async fn init(db: &Database) -> Self {
         let collection: Collection<User> = db.collection("user");
         UserRepo { collection }
     }
 
-    pub async fn update_user_income(&self, user_id: ObjectId, post_id: &Bson, update_type: UpdateType) -> Result<UpdateResult, Error> {
+    async fn update_user_income(&self, user_id: ObjectId, post_id: &Bson, update_type: UpdateType) -> Result<UpdateResult, Error> {
         let filter_options = doc!{"_id": user_id};
         let doc = match update_type {
             UpdateType::Add => {
@@ -78,7 +88,7 @@ impl UserRepo {
         }
     }
 
-    pub async fn create_user(&self, new_user: User) -> Result<UserResponse, Error> {
+    async fn create_user(&self, new_user: User) -> Result<UserResponse, Error> {
         let hashed_password: String = hash(new_user.password.as_str(), DEFAULT_COST).unwrap();
         let email_result = self.get_user_by_email(&new_user.email).await;
         match email_result {
@@ -105,7 +115,7 @@ impl UserRepo {
         }
     }
 
-    pub async fn login_user(&self, user: UserLogin) -> Result<User, Error> {
+    async fn login_user(&self, user: UserLogin) -> Result<User, Error> {
         let user_result = self.get_user_by_email(&user.email).await;
         match user_result {
             Ok(data) => {
