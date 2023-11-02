@@ -24,8 +24,27 @@ impl CategoryRepo {
         CategoryRepo { collection }
     }
 
+    async fn get_category_by_name(&self, category_name: &String, owner_id: ObjectId) -> Result<Category, Error> {
+        let filter_options = doc! {"category_name": category_name, "owner": owner_id};
+        let category = self
+            .collection
+            .find_one(filter_options, None)
+            .await
+            .ok()
+            .unwrap();
+        match category {
+            Some(cat) => Ok(cat),
+            None => Err(Error::DeserializationError { message: "No category found".to_string() })
+        }
+    }
+
     pub async fn create_category(&self, category: Category, user_id: &String, user_repo: &UserRepo) -> Result<InsertOneResult, Error> {
         let owner_id = user_id.transform_to_obj_id().unwrap();
+        let is_category_exists = self.get_category_by_name(&category.category_name, owner_id).await;
+        match is_category_exists {
+            Ok(_) => return Err(Error::DeserializationError { message: "Category with given name already exists".to_string() }),
+            _ => ()
+        }
         let category = Category {
             id: None,
             owner: Some(owner_id),
