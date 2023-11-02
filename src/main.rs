@@ -13,6 +13,7 @@ use actix_cors::Cors;
 use env_logger::Env;
 use repository::user_repo::UserRepo;
 use repository::income_repo::IncomeRepo;
+use repository::category::CategoryRepo;
 use app_state::app_state::AppState;
 use db::db::DatabaseInstance;
 
@@ -23,9 +24,11 @@ async fn main() -> std::io::Result<()> {
     let db_instance = DatabaseInstance::init().await;
     let user_repo = UserRepo::init(&db_instance.instance).await;
     let income_repo = IncomeRepo::init(&db_instance.instance).await;
+    let category_repo = CategoryRepo::init(&db_instance.instance).await;
     let state = AppState {
         user_repo,
-        income_repo
+        income_repo,
+        category_repo
     };
     
     HttpServer::new(move || {

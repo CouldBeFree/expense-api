@@ -14,6 +14,7 @@ pub struct User {
     pub password: String,
     pub expenses: Option<Vec<ObjectId>>,
     pub incomes: Option<Vec<ObjectId>>,
+    pub category: Option<Vec<ObjectId>>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

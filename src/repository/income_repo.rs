@@ -2,7 +2,7 @@ extern crate dotenv;
 
 use futures::StreamExt;
 use mongodb::{
-    bson::{extjson::de::Error, oid::ObjectId, doc, Bson},
+    bson::{extjson::de::Error, doc, Bson},
     results::{ InsertOneResult, DeleteResult },
     options::{FindOneAndUpdateOptions, FindOptions, ReturnDocument},
     Collection, Database
@@ -12,12 +12,6 @@ use crate::models::income_model::Income;
 use crate::utils::{UpdateType, Pagination, ArrayResponse, QueryParams, ParseStringToObjId};
 
 use super::user_repo::UserRepo;
-
-impl ParseStringToObjId for String {
-    fn transform_to_obj_id(&self) -> Result<ObjectId, mongodb::bson::oid::Error> {
-        ObjectId::parse_str(self)
-    }
-}
 
 #[derive(Clone, Debug)]
 pub struct IncomeRepo {
@@ -31,7 +25,7 @@ impl IncomeRepo {
     }
 
     pub async fn create_income(&self, income: Income, user_id: &String, user_repo: &UserRepo) -> Result<InsertOneResult, Error> {
-        let obj_id = ObjectId::parse_str(user_id).unwrap();
+        let obj_id = user_id.transform_to_obj_id().unwrap();
         let new_income = Income {
             id: None,
             income_name: income.income_name.to_owned(),
@@ -51,8 +45,8 @@ impl IncomeRepo {
     }
 
     pub async fn update_income(&self, income: Income, income_id: &String, user_id: &String) -> Result<Income, Error> {
-        let obj_id = ObjectId::parse_str(income_id).unwrap();
-        let user_obj_id = ObjectId::parse_str(user_id).unwrap();
+        let obj_id = income_id.transform_to_obj_id().unwrap();
+        let user_obj_id = user_id.transform_to_obj_id().unwrap();
         let filter_options = doc!{"_id": obj_id, "owner": user_obj_id};
         let amount = income.amount;
         let bson_amount = Bson::from(amount as i64);
@@ -72,8 +66,8 @@ impl IncomeRepo {
     }
 
     pub async fn get_income(&self, income_id: &String, user_id: &String) -> Result<Income, Error> {
-        let obj_income_id = ObjectId::parse_str(income_id).unwrap();
-        let user_obj_id = ObjectId::parse_str(user_id).unwrap();
+        let obj_income_id = income_id.transform_to_obj_id().unwrap();
+        let user_obj_id = user_id.transform_to_obj_id().unwrap();
         let filter_options = doc!{"_id": obj_income_id, "owner": user_obj_id};
         let income = self
             .collection
@@ -87,7 +81,7 @@ impl IncomeRepo {
     }
 
     pub async fn get_incomes(&self, user_id: &String, query_params: QueryParams) -> Result<ArrayResponse<Income>, Error> {
-        let user_obj_id = ObjectId::parse_str(user_id).unwrap();
+        let user_obj_id = user_id.transform_to_obj_id().unwrap();
         let filter_options = doc!{"owner": user_obj_id};
         let page = query_params.page;
         let per_page = query_params.per_page;

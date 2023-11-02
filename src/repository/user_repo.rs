@@ -23,6 +23,32 @@ impl UserRepo {
         UserRepo { collection }
     }
 
+    pub async fn update_user_category(&self, user_id: ObjectId, category_id: &Bson, update_type: UpdateType) -> Result<UpdateResult, Error> {
+        let filter_options = doc!{"_id": user_id};
+        let doc = match update_type {
+            UpdateType::Add => {
+                doc! {
+                    "$push": {
+                        "category": &category_id
+                    }
+                }
+            },
+            UpdateType::Remove => {
+                doc! {
+                    "$pull": {
+                        "category": &category_id
+                    }
+                }
+            }
+        };
+        let user = self
+            .collection
+            .update_one(filter_options, doc, None)
+            .await
+            .unwrap();
+        Ok(user)
+    }
+
     pub async fn update_user_income(&self, user_id: ObjectId, post_id: &Bson, update_type: UpdateType) -> Result<UpdateResult, Error> {
         let filter_options = doc!{"_id": user_id};
         let doc = match update_type {
@@ -90,7 +116,8 @@ impl UserRepo {
                     email: new_user.email.to_owned(),
                     password: hashed_password,
                     expenses: Some(vec![]),
-                    incomes: Some(vec![])
+                    incomes: Some(vec![]),
+                    category: Some(vec![])
                 };
                 let user = self
                     .collection

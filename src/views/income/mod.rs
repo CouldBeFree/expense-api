@@ -8,11 +8,11 @@ use actix_web::web::{ServiceConfig, post, scope, put, get, delete};
 
 pub fn income_views_factory(app: &mut ServiceConfig) {
     app.service(
-        scope("")
-        .route("income", post().to(create_income::create))
-        .route("income/{id}", get().to(get_income::get_income))
-        .route("income/{id}", put().to(update_income::update))
-        .route("incomes", get().to(get_incomes::get_incomes))
-        .route("income/{id}", delete().to(remove_income::remove))
+        scope("income")
+        .route("", post().to(create_income::create))
+        .route("{id}", get().to(get_income::get_income))
+        .route("{id}", put().to(update_income::update))
+        .route("", get().to(get_incomes::get_incomes))
+        .route("{id}", delete().to(remove_income::remove))
     );
 }

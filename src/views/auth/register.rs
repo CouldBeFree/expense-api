@@ -9,7 +9,8 @@ pub async fn register(db: Data<AppState>, new_user: Json<User>) -> impl Responde
         email: new_user.email.to_owned(),
         password: new_user.password.to_owned(),
         expenses: Some(vec![]),
-        incomes: Some(vec![])
+        incomes: Some(vec![]),
+        category: Some(vec![])
     };
     if !data.is_valid_email() {
         return HttpResponse::BadRequest().json(Error{error: "Invalid email".to_string()})
