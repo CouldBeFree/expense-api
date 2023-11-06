@@ -9,7 +9,7 @@ use mongodb::{
 };
 
 use crate::models::income_model::Income;
-use crate::utils::{UpdateType, Pagination, ArrayResponse, QueryParams, ParseStringToObjId};
+use crate::utils::{UpdateType, Pagination, ArrayResponseWithPagination, QueryParams, ParseStringToObjId};
 
 use super::user_repo::UserRepo;
 
@@ -80,7 +80,7 @@ impl IncomeRepo {
         }
     }
 
-    pub async fn get_incomes(&self, user_id: &String, query_params: QueryParams) -> Result<ArrayResponse<Income>, Error> {
+    pub async fn get_incomes(&self, user_id: &String, query_params: QueryParams) -> Result<ArrayResponseWithPagination<Income>, Error> {
         let user_obj_id = user_id.transform_to_obj_id().unwrap();
         let filter_options = doc!{"owner": user_obj_id};
         let page = query_params.page;
@@ -120,7 +120,7 @@ impl IncomeRepo {
             per_page: per_page,
             previous: prev
         };
-        let response = ArrayResponse {
+        let response = ArrayResponseWithPagination {
             data: results,
             pagination
         };

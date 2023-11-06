@@ -28,9 +28,14 @@ pub struct Pagination {
 }
 
 #[derive(Debug, Serialize)]
-pub struct ArrayResponse<T> {
+pub struct ArrayResponseWithPagination<T> {
     pub data: Vec<T>,
     pub pagination: Pagination
+}
+
+#[derive(Debug, Serialize)]
+pub struct ArrayResponse<T> {
+    pub data: Vec<T>
 }
 
 #[derive(Debug)]

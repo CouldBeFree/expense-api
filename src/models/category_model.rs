@@ -8,3 +8,10 @@ pub struct Category {
     pub category_name: String,
     pub owner: Option<ObjectId>,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CategoryArrayResponse {
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    pub id: Option<ObjectId>,
+    pub category_name: String,
+}

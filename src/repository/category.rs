@@ -4,12 +4,12 @@ use futures::StreamExt;
 use mongodb::{
     bson::{extjson::de::Error, oid::ObjectId, doc, Bson},
     results::{ InsertOneResult, DeleteResult },
-    options::{FindOneAndUpdateOptions, FindOptions, ReturnDocument},
+    options::FindOptions,
     Collection, Database
 };
 
-use crate::models::category_model::Category;
-use crate::utils::{UpdateType, Pagination, ArrayResponse, QueryParams, ParseStringToObjId};
+use crate::models::category_model::{Category, CategoryArrayResponse};
+use crate::utils::{UpdateType, ArrayResponse, ParseStringToObjId};
 
 use super::user_repo::UserRepo;
 
@@ -36,6 +36,59 @@ impl CategoryRepo {
             Some(cat) => Ok(cat),
             None => Err(Error::DeserializationError { message: "No category found".to_string() })
         }
+    }
+
+    pub async fn remove_category(&self, user_id: &String, category_id: &String, user_repo: &UserRepo) -> Result<DeleteResult, Error> {
+        let obj_category_id = category_id.transform_to_obj_id().unwrap();
+        let obj_user_id = user_id.transform_to_obj_id().unwrap();
+        let filter_options = doc!{"_id": obj_category_id, "owner": obj_user_id};
+        let remove_result = self
+            .collection
+            .delete_one(filter_options, None)
+            .await;
+        match remove_result {
+            Ok(dr) => {
+                let bs = Bson::ObjectId(obj_category_id);
+                user_repo.update_user_category(obj_user_id, &bs, UpdateType::Remove).await?;
+                let count = dr.deleted_count;
+                if count == 0 {
+                    return Err(Error::DeserializationError { message: "Income not found".to_string() })
+                }
+                else {
+                    return Ok(dr)
+                }
+            },
+            Err(e) => Err(Error::DeserializationError { message: e.to_string() })
+        }
+    }
+
+    pub async fn get_categories(&self, user_id: &String) -> Result<ArrayResponse<CategoryArrayResponse>, Error> {
+        let user_obj_id =  user_id.transform_to_obj_id().unwrap();
+        let filter_options = doc!{"owner": user_obj_id};
+        let projection = doc!{"owner": 0};
+        let t = FindOptions::builder().projection(projection).build();
+        let mut categories = self
+            .collection
+            .find(filter_options.to_owned(), t)
+            .await
+            .unwrap();
+        let mut results: Vec<CategoryArrayResponse> = Vec::new();
+        while let Some(res) = categories.next().await {
+            match res {
+                Ok(doc) => {
+                    let response_item = CategoryArrayResponse {
+                        id: doc.id,
+                        category_name: doc.category_name
+                    };
+                    results.push(response_item)
+                },
+                _ => return Err(Error::DeserializationError { message: "Deserilaztion error".to_string() })
+            }
+        }
+        let res = ArrayResponse {
+            data: results
+        };
+        Ok(res)
     }
 
     pub async fn create_category(&self, category: Category, user_id: &String, user_repo: &UserRepo) -> Result<InsertOneResult, Error> {
