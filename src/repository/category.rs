@@ -4,7 +4,7 @@ use futures::StreamExt;
 use mongodb::{
     bson::{extjson::de::Error, oid::ObjectId, doc, Bson},
     results::{ InsertOneResult, DeleteResult },
-    options::FindOptions,
+    options::{FindOptions, FindOneAndUpdateOptions, ReturnDocument},
     Collection, Database
 };
 
@@ -22,6 +22,50 @@ impl CategoryRepo {
     pub async fn init(db: &Database) -> Self {
         let collection: Collection<Category> = db.collection("category");
         CategoryRepo { collection }
+    }
+
+    pub async fn get_category_by_id(&self, user_id: &String, category_id: &String) -> Result<CategoryArrayResponse, Error> {
+        let user_obj_id = user_id.transform_to_obj_id().unwrap();
+        let category_obj_id = category_id.transform_to_obj_id().unwrap();
+        let filter_options = doc!{"_id": category_obj_id, "owner": user_obj_id};
+        let category = self
+            .collection
+            .find_one(filter_options, None)
+            .await
+            .unwrap();
+        match category {
+            Some(cat) => {
+                let response = CategoryArrayResponse {
+                    id: cat.id,
+                    category_name: cat.category_name
+                };
+                Ok(response)
+            },
+            None => Err(Error::DeserializationError { message: "Income not found".to_string() })
+        }
+    }
+
+    pub async fn update_category(&self, user_id: &String, category_id: &String, category: Category) -> Result<CategoryArrayResponse, Error> {
+        let user_obj_id = user_id.transform_to_obj_id().unwrap();
+        let category_obj_id = category_id.transform_to_obj_id().unwrap();
+        let filter_options = doc!{"_id": category_obj_id, "owner": user_obj_id};
+        let opts = FindOneAndUpdateOptions::builder().return_document(ReturnDocument::After).build();
+        let update_options = doc! {"$set": {"category_name": category.category_name}};
+        let update_result = self
+            .collection
+            .find_one_and_update(filter_options, update_options, opts)
+            .await
+            .unwrap();
+        match update_result {
+            Some(cat) => {
+                let response = CategoryArrayResponse {
+                    id: cat.id,
+                    category_name: cat.category_name
+                };
+                Ok(response)
+            }
+            None => Err(Error::DeserializationError { message: "Category not found".to_string() })
+        }
     }
 
     async fn get_category_by_name(&self, category_name: &String, owner_id: ObjectId) -> Result<Category, Error> {
