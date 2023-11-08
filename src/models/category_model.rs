@@ -7,6 +7,7 @@ pub struct Category {
     pub id: Option<ObjectId>,
     pub category_name: String,
     pub owner: Option<ObjectId>,
+    pub expenses: Option<Vec<ObjectId>>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

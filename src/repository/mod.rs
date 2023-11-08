@@ -1,6 +1,7 @@
 pub mod user_repo;
 pub mod income_repo;
-pub mod category;
+pub mod category_repo;
+pub mod expense_repo;
 
 use crate::utils::{UpdateType, Pagination, ArrayResponse, QueryParams, ParseStringToObjId};
 use mongodb::{

@@ -23,6 +23,33 @@ impl UserRepo {
         UserRepo { collection }
     }
 
+    pub async fn update_user_expense(&self, user_id: ObjectId, expense_id: &Bson, update_type: UpdateType) -> Result<UpdateResult, Error> {
+        let filter_options = doc!{"_id": user_id};
+        let doc = match update_type {
+            UpdateType::Add => {
+                doc! {
+                    "$push": {
+                        "expenses": &expense_id
+                    }
+                }
+            },
+            UpdateType::Remove => {
+                doc! {
+                    "$pull": {
+                        "expenses": &expense_id
+                    }
+                }
+            }
+        };
+        let user = self
+            .collection
+            .update_one(filter_options, doc, None)
+            .await
+            .unwrap();
+        println!("user, {:?}", user);
+        Ok(user)
+    }
+
     pub async fn update_user_category(&self, user_id: ObjectId, category_id: &Bson, update_type: UpdateType) -> Result<UpdateResult, Error> {
         let filter_options = doc!{"_id": user_id};
         let doc = match update_type {

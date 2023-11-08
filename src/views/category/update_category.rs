@@ -9,7 +9,8 @@ pub async fn update_category(db: Data<AppState>, new_category: Json<Category>, t
     let income_data = Category {
         id: new_category.id,
         owner: new_category.owner,
-        category_name: new_category.category_name.to_owned()
+        category_name: new_category.category_name.to_owned(),
+        expenses: None
     };
     let res = db.category_repo.update_category(&user_id, &category_id, income_data).await;
     match res {

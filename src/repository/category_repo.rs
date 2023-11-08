@@ -3,7 +3,7 @@ extern crate dotenv;
 use futures::StreamExt;
 use mongodb::{
     bson::{extjson::de::Error, oid::ObjectId, doc, Bson},
-    results::{ InsertOneResult, DeleteResult },
+    results::{ InsertOneResult, DeleteResult, UpdateResult },
     options::{FindOptions, FindOneAndUpdateOptions, ReturnDocument},
     Collection, Database
 };
@@ -24,6 +24,35 @@ impl CategoryRepo {
         CategoryRepo { collection }
     }
 
+    pub async fn update_category_expense(&self, category_id: ObjectId, user_id: ObjectId, expense_id: &Bson, update_type: UpdateType) -> Result<UpdateResult, Error> {
+        let filter_options = doc!{"owner": user_id, "_id": category_id};
+        let doc = match update_type {
+            UpdateType::Add => {
+                doc! {
+                    "$push": {
+                        "expenses": &expense_id
+                    }
+                }
+            },
+            UpdateType::Remove => {
+                doc! {
+                    "$pull": {
+                        "expenses": &expense_id
+                    }
+                }
+            }
+        };
+        let user = self
+            .collection
+            .update_one(filter_options, doc, None)
+            .await
+            .unwrap();
+        if user.matched_count == 0 {
+            return Err(Error::DeserializationError { message: "Category update failed".to_owned() });
+        }
+        Ok(user)
+    }
+
     pub async fn get_category_by_id(&self, user_id: &String, category_id: &String) -> Result<CategoryArrayResponse, Error> {
         let user_obj_id = user_id.transform_to_obj_id().unwrap();
         let category_obj_id = category_id.transform_to_obj_id().unwrap();
@@ -37,7 +66,7 @@ impl CategoryRepo {
             Some(cat) => {
                 let response = CategoryArrayResponse {
                     id: cat.id,
-                    category_name: cat.category_name
+                    category_name: cat.category_name,
                 };
                 Ok(response)
             },
@@ -145,7 +174,8 @@ impl CategoryRepo {
         let category = Category {
             id: None,
             owner: Some(owner_id),
-            category_name: category.category_name
+            category_name: category.category_name,
+            expenses: category.expenses
         };
         let category_result = self
             .collection

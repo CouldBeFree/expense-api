@@ -9,7 +9,8 @@ pub async fn create(db: Data<AppState>, token: JwtToken, category: Json<Category
     let category = Category {
         category_name: category.category_name.to_owned(),
         owner: None,
-        id: None
+        id: None,
+        expenses: Some(vec![])
     };
     let result = db.category_repo.create_category(category, &user_id, &db.user_repo).await;
     match result {
